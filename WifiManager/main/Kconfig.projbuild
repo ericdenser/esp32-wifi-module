@@ -1,0 +1,29 @@
+menu "Wifi Manager Configuration"
+
+    config WIFI_SSID
+        string "WiFi SSID Default"
+        default ""
+        help
+            SSID padrao usado pelo WifiManager.
+
+    config WIFI_PASSWORD
+        string "WiFi Password Default"
+        default ""
+        help
+            Senha padrao usada pelo WifiManager.
+
+    config WIFI_MAX_RETRIES
+        int "Maximum Retries"
+        default 10
+        range 0 100
+        help
+            Numero maximo de tentativas antes de reiniciar.
+
+    config WIFI_AUTO_RESET
+        bool "Auto Restart on Failure"
+        default y
+        help
+            Se habilitado, o ESP32 reiniciará automaticamente após exceder o número máximo de tentativas de conexão.
+            Se desabilitado, ele apenas logará o erro e continuará rodando (requer tratamento manual).
+
+endmenu
