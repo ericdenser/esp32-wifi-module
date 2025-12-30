@@ -44,7 +44,8 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "       RUNNING SETUP");
     ESP_LOGI(TAG, "===============================");
 
-
+    /* Wi-Fi driver requires the NVS memory to be initialized even if your not going to use it.
+        Before calling the WifiManager, make sure to start nvs as shown below. */
     // ------- Initialize NVS (Non-Volatile Storage) --------
     esp_err_t err = nvs_flash_init();
     if (err != ESP_OK) {
@@ -55,15 +56,15 @@ extern "C" void app_main(void)
     ESP_ERROR_CHECK(err);
 
     // Open NVS handle
-    err = nvs_open("OtaManager", NVS_READWRITE, &my_nvs_handle);
+    err = nvs_open("WifiManager", NVS_READWRITE, &my_nvs_handle);
     ESP_ERROR_CHECK(err);
 
 
     // ------------- Initialize and Connect WiFi ----------------   
 
     WifiConfig cfg;
-    cfg.ssid = "iPhoneEric";
-    cfg.password = "pirocaaa";
+    cfg.ssid = "YOUR_SSID";
+    cfg.password = "YOUR_PASSWORD";
     cfg.max_retries = 15;
 
     ESP_LOGW(TAG, "======= TESTING INIT FUNC =======");
@@ -86,7 +87,7 @@ extern "C" void app_main(void)
     WifiManager::reconnect();
     checkStatus();
 
-
+    // Intentional delay to allow async Wi-Fi operations to complete and state logs to stabilize.
     vTaskDelay(pdMS_TO_TICKS(10000));
 
 
@@ -95,20 +96,26 @@ extern "C" void app_main(void)
     WifiManager::stop();
     checkStatus();
 
+    // Intentional delay to allow async Wi-Fi operations to complete and state logs to stabilize.
     vTaskDelay(pdMS_TO_TICKS(10000));
+
     
     ESP_LOGW(TAG, "======= TESTING THE START FUNC =======");
     WifiManager::start();
     checkStatus();
-
+    
+    // Intentional delay to allow async Wi-Fi operations to complete and state logs to stabilize.
     vTaskDelay(pdMS_TO_TICKS(10000));
+    
 
     // Lets now deinit our WifiManager and init it again
     ESP_LOGW(TAG, "======= TESTING THE DEINIT FUNC =======");
     WifiManager::deinit();
     checkStatus();
 
+    // Intentional delay to allow async Wi-Fi operations to complete and state logs to stabilize.
     vTaskDelay(pdMS_TO_TICKS(10000));
+    
 
     ESP_LOGW(TAG, "======= TESTING THE INIT FUNC AGAIN =======");
     WifiManager::init(cfg);
@@ -124,7 +131,7 @@ extern "C" void app_main(void)
 
         // Monitor WiFi Health
         if(WifiManager::hasFailed()) {
-            ESP_LOGE(TAG, "Critical. Not able to connect after 10 attempts.");
+            ESP_LOGE(TAG, "Critical. Not able to connect after all attempts.");
             WifiManager::recover();
         }
 
