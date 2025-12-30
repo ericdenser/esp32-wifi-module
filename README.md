@@ -1,8 +1,6 @@
 # esp32-wifi-module
 
 
-## Sobre
-
 Este repositório contém o WifiManager, uma classe desenvolvida para abstrair e gerenciar conexões Wi-Fi no ESP32 utilizando o framework ESP-IDF.
 
 O módulo implementa um gerenciamento robusto do ciclo de vida da conexão Wi-Fi, garantindo estabilidade no uso da interface de rede e tratamento adequado de falhas e reconexões por meio de uma máquina de estados interna.
