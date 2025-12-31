@@ -7,14 +7,15 @@ O módulo implementa um gerenciamento robusto do ciclo de vida da conexão Wi-Fi
 
 A conexão é conduzida de forma assíncrona, baseada em eventos do ESP-IDF, onde os handlers assumem o controle do fluxo de conexão, reconexão e recuperação em background.
 
-Além disso, o módulo oferece suporte a inicialização síncrona opcional, permitindo bloquear a execução da tarefa até que a conexão seja efetivamente estabelecida. Esse comportamento é ideal para cenários em que a conectividade Wi-Fi é um pré-requisito obrigatório para o boot ou para a continuação da aplicação.
+Foi produzido um exemplo prático e simples de utilização do WifiManager, demonstrando o ciclo completo de uso e testando todos os métodos. [Clique aqui](https://github.com/ericdenser/esp32-wifi-module/blob/main/WifiManager/main/main.cpp) para visualizar.
+
 
 ## Estrutura do Módulo
 
 O componente é composto por dois arquivos principais:
 
 - [ ] [WifiManager.h](https://github.com/ericdenser/esp32-wifi-module/blob/main/WifiManager/main/src/WifiManager.h): Definição da classe, enumerações de estado e assinatura dos métodos estáticos.
-- [ ] [WifiManager.cpp](https://github.com/ericdenser/esp32-wifi-module/blob/main/WifiManager/main/main.cpp): Implementação da lógica de eventos, máquina de estados, controle do driver Wi-Fi.
+- [ ] [WifiManager.cpp](https://github.com/ericdenser/esp32-wifi-module/blob/main/WifiManager/main/src/WifiManager.cpp): Implementação da lógica de eventos, máquina de estados, controle do driver Wi-Fi.
 
 ## Dependências e Como Utilizar
 
@@ -54,7 +55,7 @@ Para utilizar esta classe, o ambiente de desenvolvimento deve atender aos seguin
 
 Método | Descrição 
 --------|-----
-void init() | Inicializa a stack LwIP, Event Loop e Driver Wi-Fi (a lógica de conexão é gerenciada de forma assíncrona pelos handlers de eventos em background). As credenciais podem ser definidas via código ou via Kconfig (valores passados por código têm prioridade sobre os definidos no menuconfig.
+void init() | Inicializa a infraestrutura de rede (Event Loop, LwIP e driver Wi-Fi) e delega o fluxo de conexão aos handlers em background. As credenciais podem ser definidas via código ou via Kconfig (valores passados por código têm prioridade sobre os definidos no menuconfig.
 void deinit() | Para o Wi-Fi, destrói a interface Netif e o Driver, limpando a memória.
 bool waitForConnection() | Bloqueia a execução até obter IP ou estourar o timeout. Aceita callback opcional para watchdog ou outras tarefas de sua escolha.
 void stop() | Para o driver Wi-Fi (define status como IDLE e previne autoreconnect no handler)
