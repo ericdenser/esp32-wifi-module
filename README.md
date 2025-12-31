@@ -137,22 +137,17 @@ Se desejar utilizar configurações padrão sem recompilar o código fonte, exec
 ## Fontes e Documentação Consultada
 Abaixo estão alguns materiais utilizados durante a implementação do WifiManager que podem ajudar na sua utilização ou ampliação.
 
-* **[Arduino ESP32 HTTPUpdate Example](https://github.com/espressif/arduino-esp32/blob/master/libraries/HTTPUpdate/examples/httpUpdate/httpUpdate.ino)** - Exemplo oficial utilizado como base para a implementação do download e escrita do firmware.
+* **[Wi-Fi Driver API Reference](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/network/esp_wifi.html)** - Documentação oficial da API de Wi-Fi do ESP-IDF.
 
-* **[Arduino ESP32 Update Library](https://github.com/espressif/arduino-esp32/blob/master/libraries/Update/src/Updater.cpp)** - Código fonte consultado para entender o funcionamento dos métodos `Update.rollBack()` e `Update.canRollBack()`.
+* **[ESP-IDF Wi-Fi Station Example](https://github.com/espressif/esp-idf/blob/master/examples/wifi/getting_started/station/main/station_example_main.c)** - Exemplo oficial da Espressif utilizado como base para a implementação e fluxo do módulo.
 
+* **[ESP-IDF FreeRTOS Concurrency and Critical Sections](https://docs.espressif.com/projects/esp-idf/en/v4.3/esp32c3/api-guides/freertos-smp.html)** - Utilizado para implementar as seções críticas (portENTER_CRITICAL).
 
-* **[Documentação Arduino-ESP32: Preferences](https://docs.espressif.com/projects/arduino-esp32/en/latest/tutorials/preferences.html)** - Documentação oficial para a manipulação da memória não-volátil (NVS) via classe `Preferences`.
+* **[ESP32 Forum. FreeRTOS Critical Sections and Spinlocks](https://esp32.com/viewtopic.php?t=12621)** - Discussões técnicas da comunidade sobre ESP32, utilizadas para compreender o comportamento de seções críticas.
 
-* **[Random Nerd Tutorials: ESP32 Preferences](https://randomnerdtutorials.com/esp32-save-data-permanently-preferences/)** - Guia para a implementação do Preferences.
+* **[Non-Volatile Storage (NVS) API](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/storage/nvs_flash.html)** - Documentação oficial da API de armazenamento flash do ESP-IDF.
 
+## Licença
 
-* **[Documentação Oficial: Reset Reasons (Espressif)](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/misc_system_api.html#_CPPv4N18esp_reset_reason_t11ESP_RST_WDTE)**- Documentação oficial sobre os códigos de reinicialização.
-
-* **[Documentação Oficial: Watchdog Timer (Espressif)](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/wdts.html#_CPPv421esp_task_wdt_config_t)** - Documentação oficial para a configuração e manipulação do Watchdog.
-
-
-* **[Documentação Oficial: OTA Updates (Espressif)](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/ota.html)** - Documentação oficial para configuração e manipulação do processo de atualização OTA e Rollback.
-
-* **[Exemplo Nativo OTA (ESP-IDF)](https://github.com/espressif/esp-idf/blob/b5956e708ecee0b9a33bb719e1da9e73b0ea73f4/examples/system/ota/native_ota_example/main/native_ota_example.c)** - Código-fonte oficial da espressif desmostrando o fluxo do OTA com Rollback.
+Este projeto é licenciado sob os termos da licença **MIT**.  
 
