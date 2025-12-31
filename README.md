@@ -127,8 +127,32 @@ Se desejar utilizar configurações padrão sem recompilar o código fonte, exec
 * **WIFI_PASSWORD**: Senha padrão.
 * **WIFI_MAX_RETRIES**: Número máximo de tentativas de reconexão antes de declarar falha.
 * **WIFI_AUTO_RESET**: Se ativado, o ESP32 reinicia automaticamente após exceder o limite de tentativas.
+- Não esqueça de fazer a build novamente para constar as novas mudanças com `idf.py build`
+
+## Limitações Conhecidas
+
+* **Configuração de IP:** Não há suporte implementado na estrutura WifiConfig para configuração de IP Estático
+* **Segurança:** O módulo utiliza a configuração padrão do driver para autenticação, suportando WPA/WPA2. Redes que exigem certificado/usuário ou redes abertas podem exigir ajustes manuais na estrutura wifi_config_t dentro do método init(). Consulte a documentação oficial da espressif para implementação.
+
+## Fontes e Documentação Consultada
+Abaixo estão alguns materiais utilizados durante a implementação do WifiManager que podem ajudar na sua utilização ou ampliação.
+
+* **[Arduino ESP32 HTTPUpdate Example](https://github.com/espressif/arduino-esp32/blob/master/libraries/HTTPUpdate/examples/httpUpdate/httpUpdate.ino)** - Exemplo oficial utilizado como base para a implementação do download e escrita do firmware.
+
+* **[Arduino ESP32 Update Library](https://github.com/espressif/arduino-esp32/blob/master/libraries/Update/src/Updater.cpp)** - Código fonte consultado para entender o funcionamento dos métodos `Update.rollBack()` e `Update.canRollBack()`.
 
 
+* **[Documentação Arduino-ESP32: Preferences](https://docs.espressif.com/projects/arduino-esp32/en/latest/tutorials/preferences.html)** - Documentação oficial para a manipulação da memória não-volátil (NVS) via classe `Preferences`.
+
+* **[Random Nerd Tutorials: ESP32 Preferences](https://randomnerdtutorials.com/esp32-save-data-permanently-preferences/)** - Guia para a implementação do Preferences.
 
 
+* **[Documentação Oficial: Reset Reasons (Espressif)](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/misc_system_api.html#_CPPv4N18esp_reset_reason_t11ESP_RST_WDTE)**- Documentação oficial sobre os códigos de reinicialização.
+
+* **[Documentação Oficial: Watchdog Timer (Espressif)](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/wdts.html#_CPPv421esp_task_wdt_config_t)** - Documentação oficial para a configuração e manipulação do Watchdog.
+
+
+* **[Documentação Oficial: OTA Updates (Espressif)](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/ota.html)** - Documentação oficial para configuração e manipulação do processo de atualização OTA e Rollback.
+
+* **[Exemplo Nativo OTA (ESP-IDF)](https://github.com/espressif/esp-idf/blob/b5956e708ecee0b9a33bb719e1da9e73b0ea73f4/examples/system/ota/native_ota_example/main/native_ota_example.c)** - Código-fonte oficial da espressif desmostrando o fluxo do OTA com Rollback.
 
