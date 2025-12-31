@@ -25,7 +25,7 @@ Para utilizar esta classe, o ambiente de desenvolvimento deve atender aos seguin
 - [ ] **ESP-IDF v5.x**.
 
 ### **Implementando Módulo**
-1. Copie os arquivos [WifiManager.h](https://github.com/ericdenser/esp32-wifi-module/blob/main/WifiManager/main/src/WifiManager.h) e [WifiManager.cpp](https://github.com/ericdenser/esp32-wifi-module/blob/main/WifiManager/main/main.cpp) diretamente na pasta em que o arquivo `main` esta ou em uma subpasta (por exemplo, /src).
+1. Copie os arquivos [WifiManager.h](https://github.com/ericdenser/esp32-wifi-module/blob/main/WifiManager/main/src/WifiManager.h) e [WifiManager.cpp](https://github.com/ericdenser/esp32-wifi-module/blob/main/WifiManager/main/src/WifiManager.cpp) diretamente na pasta em que o arquivo `main` esta ou em uma subpasta (por exemplo, /src).
 2. Atualize o `CMakeLists.txt` para incluir o arquivo `src/WifiManager.cpp` 
 3. Inclua o cabeçalho do módulo 
 
