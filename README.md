@@ -7,7 +7,7 @@ O módulo implementa um gerenciamento robusto do ciclo de vida da conexão Wi-Fi
 
 A conexão é conduzida de forma assíncrona, baseada em eventos do ESP-IDF, onde os handlers assumem o controle do fluxo de conexão, reconexão e recuperação em background.
 
-Foi produzido um exemplo prático e simples de utilização do WifiManager, demonstrando o ciclo completo de uso e testando todos os métodos. [Clique aqui](https://github.com/ericdenser/esp32-wifi-module/blob/main/WifiManager/main/main.cpp) para visualizar.
+> Foi produzido um exemplo prático e simples de utilização do WifiManager, demonstrando o ciclo completo de uso e testando todos os métodos. [Clique aqui](https://github.com/ericdenser/esp32-wifi-module/blob/main/WifiManager/main/main.cpp) para visualizar.
 
 
 ## Estrutura do Módulo
@@ -105,7 +105,7 @@ O driver Wi-Fi do ESP32 exige que a memória NVS esteja inicializada para rodar.
 ### Comportamento Bloqueante e Watchdog
 Ao utilizar a função waitForConnection(), a tarefa atual permanece em loop até que a conexão Wi-Fi seja estabelecida ou o tempo limite seja atingido. Caso precise executar alguma tarefa durante o loop, basta passar no parâmetro como o exemplo a seguir:
 
-O método reset e sua classe estão disponíveis para consulta no repositório [WatchdogManager]()
+O método reset e sua classe estão disponíveis para consulta no repositório [WatchdogManager](https://github.com/ericdenser/esp32-watchdog-manager)
 ```cpp
 
 WifiManager::init();
