@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <stdint.h>
+#include <string>
 
 
 struct WifiConfig {
@@ -54,6 +55,12 @@ class WifiManager {
         static void stop();
 
         static int getRssi();
+
+        static std::string getIp();
+
+        static std::string getSSID();
+
+        static std::string getMacAddress();
 
         static FailReason getFailReason();
 
