@@ -1,3 +1,4 @@
+#include <string>
 #include <string.h>
 #include "WifiManager.h"
 #include "freertos/FreeRTOS.h"
@@ -9,6 +10,9 @@
 #include "esp_event.h"
 #include "esp_timer.h"
 #include "sdkconfig.h"
+#include "esp_idf_version.h"
+#include "esp_netif.h"
+#include "esp_mac.h"
 
 
 #ifndef CONFIG_WIFI_SSID
@@ -31,8 +35,8 @@
 
 static char s_final_ssid[33];
 static char s_final_pass[64];
-static int  s_final_retries = 10;
-static bool s_reset_enable = true;
+static int  s_final_retries;
+static bool using_backup_creds = false;
 
 static portMUX_TYPE s_wifi_mux = portMUX_INITIALIZER_UNLOCKED;
 static esp_netif_t *s_wifi_netif = NULL; 
@@ -184,11 +188,11 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
     } else if (event_base == IP_EVENT) {
         switch(event_id) {
             case IP_EVENT_STA_GOT_IP: {
-            ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data; // Obtém as informações do IP
-            ESP_LOGI(TAG, "HANDLER >> Connected to ip: " IPSTR, IP2STR(&event->ip_info.ip));
-        
-            set_success();
-            break;
+                ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data; // Obtém as informações do IP
+                ESP_LOGI(TAG, "HANDLER >> Connected to ip: " IPSTR, IP2STR(&event->ip_info.ip));
+            
+                set_success();
+                break;
             }
         }
     }
@@ -205,6 +209,8 @@ void WifiManager::init(WifiConfig config) {
     s_wifi_event_group = xEventGroupCreate();
 
     s_is_initialized = true;
+
+    using_backup_creds = false;
 
     /*------- Lógica das Credenciais ---------------
     Credenciais via código tem preferência, caso nao tenha utiliza do menuconfig*/
@@ -233,10 +239,6 @@ void WifiManager::init(WifiConfig config) {
     } else {
         s_final_retries = CONFIG_WIFI_MAX_RETRIES;
     }
-
-    // Lógica do RESET controlada no menuconfig
-    s_reset_enable = CONFIG_WIFI_AUTO_RESET;
-
 
     // --- Inicialização Padrão ESP-IDF ---
     ESP_ERROR_CHECK(esp_netif_init()); // Inicializa a camada TCP/IP
@@ -346,18 +348,57 @@ bool WifiManager::hasFailed() {
 }
 
 void WifiManager::recover() {
-    if (s_fail_reason != FailReason::WIFI_FAIL_NONE) {
+    ESP_LOGE(TAG, "Max retries reached. Executing recovery strategy...");
 
-        if (s_reset_enable) {
-            ESP_LOGE(TAG, "Unrecoverable WiFi error. Restarting system...");
-            vTaskDelay(pdMS_TO_TICKS(1000)); 
-            esp_restart();
+    // ---------------- RESET ----------------
+    #ifdef CONFIG_WIFI_RECOVERY_RESET
+        ESP_LOGW(TAG, "Strategy: SYSTEM RESET");
+        esp_restart();
+    #endif
+
+    // ---------------- SWAP SSID ----------------
+    #ifdef CONFIG_WIFI_RECOVERY_SWAP
+        if (!using_backup_creds) {
+            ESP_LOGW(TAG, "Strategy: SWAP TO BACKUP NETWORK");
+            
+            // Marca que estamos usando backup
+            using_backup_creds = true;
+            
+            // Copia as credenciais do Kconfig de backup
+            wifi_config_t conf = {};
+            strcpy((char*)conf.sta.ssid, CONFIG_WIFI_BACKUP_SSID);
+            strcpy((char*)conf.sta.password, CONFIG_WIFI_BACKUP_PASSWORD);
+            
+            // Reseta contador de tentativas
+            s_retry_count = 0; 
+
+            xEventGroupClearBits(s_wifi_event_group, WIFI_FAIL_BIT);
+
+            portENTER_CRITICAL(&s_wifi_mux);
+            s_wifi_status = WifiManager::WifiStatus::WIFI_STATE_CONNECTING;
+            portEXIT_CRITICAL(&s_wifi_mux);
+            
+            // Aplica no driver
+            ESP_LOGI(TAG, "Setting backup SSID: %s", conf.sta.ssid);
+            ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &conf));
+            
+            // Tenta conectar novamente
+            ESP_ERROR_CHECK(esp_wifi_connect());
+            
         } else {
-            ESP_LOGE(TAG, "Unrecoverable WiFi error. AUTO_RESET is disabled, trying reconnection...");
-            reconnect();
+            // Se já estávamos no backup e falhou de novo -> RESET
+            ESP_LOGE(TAG, "Backup network also failed. System Reset.");
+            esp_restart();
         }
-       
-    }
+    #endif
+
+    // ---------------- MANUAL / IDLE ----------------
+    #ifdef CONFIG_WIFI_RECOVERY_NONE
+        ESP_LOGW(TAG, "Strategy: NONE (IDLE). Waiting for user intervention.");
+        /* O estado já está como FAILED,
+         então o loop de eventos vai parar de tentar reconectar sozinho.
+        Você pode tratar aqui da forma que quiser (emitir um evento ou callback se quiser avisar a Main.) */ 
+    #endif
 }
 
 void WifiManager::deinit() {
@@ -452,6 +493,47 @@ int WifiManager::getRssi() {
         ESP_LOGW(TAG, "Falha ao obter RSSI: %s", esp_err_to_name(err));
     }
     return -127;
+}
+
+std::string WifiManager::getMacAddress() {
+    uint8_t mac[6]; 
+  
+    esp_base_mac_addr_get(mac);
+    
+    char macStr[18];
+    
+    // Formata os bytes em Hexadecimal
+    snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    return std::string(macStr);
+    
+}
+
+std::string WifiManager::getIp() {
+    
+    // Pega o IP 
+    esp_netif_t* netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+    esp_netif_ip_info_t ip_info;
+    
+    if (netif != NULL && esp_netif_get_ip_info(netif, &ip_info) == ESP_OK) {
+        // Formata o IP em string (ex: "192.168.0.105")
+        char ipStr[16];
+        esp_ip4addr_ntoa(&ip_info.ip, ipStr, sizeof(ipStr));
+        return std::string(ipStr);
+    } else {
+        return "0.0.0.0";
+    }
+}
+
+std::string WifiManager::getSSID() {
+    // Pega o SSID (Direto do driver Wi-Fi)
+    wifi_ap_record_t ap_info;
+    if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
+        return std::string((char*)ap_info.ssid);
+    } else {
+        return "Desconectado";
+    }
 }
 
 WifiManager::FailReason WifiManager::getFailReason() {
