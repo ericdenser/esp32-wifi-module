@@ -1,29 +1,50 @@
 menu "Wifi Manager Configuration"
 
     config WIFI_SSID
-        string "WiFi SSID Default"
-        default ""
-        help
-            SSID padrao usado pelo WifiManager.
+        string "Main SSID"
+        default "Myssid"
 
     config WIFI_PASSWORD
-        string "WiFi Password Default"
-        default ""
-        help
-            Senha padrao usada pelo WifiManager.
+        string "Main Password"
+        default "Mypassword"
 
     config WIFI_MAX_RETRIES
-        int "Maximum Retries"
-        default 10
-        range 0 100
-        help
-            Numero maximo de tentativas antes de reiniciar.
+        int "Max Retries"
+        default 5
 
-    config WIFI_AUTO_RESET
-        bool "Auto Restart on Failure"
-        default y
+    choice WIFI_FAILURE_STRATEGY
+        prompt "Recovery Strategy on Failure"
+        default WIFI_RECOVERY_RESET
         help
-            Se habilitado, o ESP32 reiniciará automaticamente após exceder o número máximo de tentativas de conexão.
-            Se desabilitado, ele apenas logará o erro e continuará rodando (requer tratamento manual).
+            Define o comportamento quando o número máximo de tentativas é atingido.
+
+        config WIFI_RECOVERY_RESET
+            bool "System Reset"
+            help
+                Reinicia o ESP32 automaticamente (esp_restart).
+
+        config WIFI_RECOVERY_SWAP
+            bool "Swap SSID (Try Backup Network)"
+            help
+                Tenta conectar em uma rede secundária definida abaixo.
+                Se a rede secundária também falhar, o sistema reinicia.
+
+        config WIFI_RECOVERY_NONE
+            bool "Keep Idle (Manual Handling)"
+            help
+                Apenas para o driver e define o estado como FAILED.
+                A aplicação deve decidir o que fazer.
+    endchoice
+
+    # CREDENCIAIS DE BACKUP (Só aparecem se SWAP for escolhido)
+    config WIFI_BACKUP_SSID
+        string "Backup SSID"
+        depends on WIFI_RECOVERY_SWAP
+        default "Backup_Network"
+
+    config WIFI_BACKUP_PASSWORD
+        string "Backup Password"
+        depends on WIFI_RECOVERY_SWAP
+        default ""
 
 endmenu
