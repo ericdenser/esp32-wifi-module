@@ -47,7 +47,12 @@ Para utilizar esta classe, o ambiente de desenvolvimento deve atender aos seguin
     WifiManager::init(cfg);
    ```
     
-5. (Opcional) Caso a aplicação dependa obrigatoriamente de conectividade Wi-Fi para continuar a execução, utilize o método síncrono: `WifiManager::waitForConnection();`
+5. (Opcional) Caso a aplicação dependa obrigatoriamente de conectividade para continuar, utilize o método síncrono em seguida:
+    ```cpp
+    if (!WifiManager::waitForConnection()) {
+        WifiManager::recover();
+    }
+    ```
 
 6. Acompanhe e gerencie os estados da conexão e eventos conforme a documentação completa abaixo:
 
@@ -55,18 +60,21 @@ Para utilizar esta classe, o ambiente de desenvolvimento deve atender aos seguin
 
 Método | Descrição 
 --------|-----
-void init() | Inicializa a infraestrutura de rede (Event Loop, LwIP e driver Wi-Fi) e delega o fluxo de conexão aos handlers em background. As credenciais podem ser definidas via código ou via Kconfig (valores passados por código têm prioridade sobre os definidos no menuconfig.
-void deinit() | Para o Wi-Fi, destrói a interface Netif e o Driver, limpando a memória.
-bool waitForConnection() | Bloqueia a execução até obter IP ou estourar o timeout. Aceita callback opcional para watchdog ou outras tarefas de sua escolha.
-void stop() | Para o driver Wi-Fi (define status como IDLE e previne autoreconnect no handler)
-void start() | Inicia o driver Wi-Fi a partir do estado IDLE.
-void reconnect() | Força um ciclo de Stop/Start para resetar a lógica de conexão.
-bool isConnected() | Retorna true se o IP foi obtido com sucesso.
-bool hasFailed() | Retorna true se o número máximo de tentativas foi excedido.
-void recover() | Executa a estratégia de recuperação após falha definitiva de conexão. O comportamento depende da configuração WIFI_AUTO_RESET.
-WifiStatus getWifiStatus() | Retorna o estado atual (IDLE, CONNECTING, CONNECTED, FAILED, RECONNECTING).
-FailReason getFailReason() | Retorna a ultima falha (NONE, AUTH, NO_AP, TIMEOUT, MAX_RETRIES...).
-int getRssi() | Retorna o valor de RSSI da rede conectada.
+`void init()` | Inicializa a infraestrutura de rede (Event Loop, LwIP e driver Wi-Fi) e delega o fluxo de conexão aos handlers em background. As credenciais podem ser definidas via código ou via Kconfig (valores passados por código têm prioridade sobre os definidos no menuconfig.
+`void deinit()` | Para o Wi-Fi, destrói a interface Netif e o Driver, limpando a memória.
+`bool waitForConnection()` | Bloqueia a execução até obter IP ou estourar o timeout. Aceita callback opcional para watchdog ou outras tarefas de sua escolha.
+`void stop()` | Para o driver Wi-Fi (define status como IDLE e previne autoreconnect no handler)
+`void start()` | Inicia o driver Wi-Fi a partir do estado IDLE.
+`void reconnect()` | Força um ciclo de Stop/Start para resetar a lógica de conexão.
+`bool isConnected()` | Retorna true se o IP foi obtido com sucesso.
+`bool hasFailed()` | Retorna true se o número máximo de tentativas foi excedido.
+`void recover()` | Executa a estratégia de recuperação após falha definitiva de conexão. O comportamento depende da configuração WIFI_AUTO_RESET.
+`WifiStatus getWifiStatus()` | Retorna o estado atual (IDLE, CONNECTING, CONNECTED, FAILED, RECONNECTING).
+`FailReason getFailReason()` | Retorna a ultima falha (NONE, AUTH, NO_AP, TIMEOUT, MAX_RETRIES...).
+`int getRssi()` | Retorna o valor de RSSI da rede conectada.
+`std::string getSSID()` | Retorna o SSID da rede conectada atualmente. |
+`std::string getIp()` | Retorna o endereço IP. |
+`std::string getMacAddress()` | Retorna o MAC Address do dispositivo formatado. |
 
 
 ## Máquina de Estados
@@ -78,6 +86,35 @@ O módulo opera com uma máquina de estados interna para garantir a estabilidade
 * **CONNECTED:** Endereço IP obtido com sucesso.
 * **RECONNECTING:** Estado transisório utilizado durante o ciclo manual de `reconnect()` para evitar condições de corrida (Race Conditions) entre o comando de parada e o evento de desconexão.
 * **FAILED:** O número máximo de tentativas (`max_retries`) foi excedido. O módulo para de tentar conectar e aguarda uma intervenção manual (como o `recover()`).
+
+
+
+## Estratégia de Recuperação 
+
+O módulo possui um sistema inteligente de recuperação (`WifiManager::recover()`) configurável via **Kconfig**. Quando o número máximo de tentativas de conexão (`max_retries`) é excedido, o sistema pode adotar uma das seguintes estratégias:
+
+1.  **System Reset:** Reinicia o ESP32 imediatamente.
+2.  **Swap SSID:**
+    * Tenta conectar em uma **Rede de Backup** (SSID/Senha secundários definidos no Kconfig).
+    * Se conectar com sucesso, o sistema opera na rede de backup.
+    * Se a rede de backup *também* falhar (após `max_retries`), o sistema reinicia o ESP32.
+3.  **Keep Idle:** Apenas marca o estado como `FAILED` e aguarda intervenção manual do código do usuário.
+
+## Configuração (Kconfig)
+
+Para utilizar configurações padrão sem recompilar o código fonte e personalizar o WifiManager, execute `idf.py menuconfig` e navegue até **Wifi Manager Configuration**:
+
+* **Main SSID / Password:** Credenciais da rede principal.
+* **Max Retries:** Número de tentativas antes de declarar falha.
+* **Recovery Strategy on Failure:**
+    * `System Reset`: Reinicia o chip (Padrão).
+    * `Swap SSID`: Habilita a rede de backup.
+    * `Keep Idle`: Não faz nada automático.
+* **Backup SSID / Password:** Credenciais da rede secundária (visíveis apenas se *Swap SSID* for selecionado).
+
+> **Nota:** Não esqueça de recompilar o projeto (`idf.py build`) após alterar configurações do menuconfig.
+
+
 
 ## Informações Importantes
 
@@ -103,7 +140,7 @@ O driver Wi-Fi do ESP32 exige que a memória NVS esteja inicializada para rodar.
 ```
 
 ### Comportamento Bloqueante e Watchdog
-Ao utilizar a função waitForConnection(), a tarefa atual permanece em loop até que a conexão Wi-Fi seja estabelecida ou o tempo limite seja atingido. Caso precise executar alguma tarefa durante o loop, basta passar no parâmetro como o exemplo a seguir:
+Ao utilizar a função `waitForConnection()`, a tarefa atual permanece em loop até que a conexão Wi-Fi seja estabelecida ou o tempo limite seja atingido. Caso precise executar alguma tarefa durante o loop, basta passar no parâmetro como o exemplo a seguir:
 
 O método reset e sua classe estão disponíveis para consulta no repositório [WatchdogManager](https://github.com/ericdenser/esp32-watchdog-manager)
 ```cpp
@@ -118,17 +155,6 @@ if (!WifiManager::waitForConnection(WatchdogManager::reset)) {
     WifiManager::recover();
 }
 ```
-
-
-### Configuração (Kconfig)
-
-Se desejar utilizar configurações padrão sem recompilar o código fonte, execute `idf.py menuconfig` e navegue até **Wifi Manager Configuration**:
-
-* **WIFI_SSID**: SSID padrão da rede.
-* **WIFI_PASSWORD**: Senha padrão.
-* **WIFI_MAX_RETRIES**: Número máximo de tentativas de reconexão antes de declarar falha.
-* **WIFI_AUTO_RESET**: Se ativado, o ESP32 reinicia automaticamente após exceder o limite de tentativas.
-- Não esqueça de fazer a build novamente para constar as novas mudanças com `idf.py build`
 
 ## Limitações Conhecidas
 
